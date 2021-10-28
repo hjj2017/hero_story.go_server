@@ -1,6 +1,7 @@
 package my_log
 
 import (
+	"fmt"
 	"github.com/pkg/errors"
 	"io"
 	"os"
@@ -10,44 +11,63 @@ import (
 )
 
 //
-// DailyFileWriter 日志文件写手
+// dailyFileWriter 日志文件写手
 //
-type DailyFileWriter struct {
+type dailyFileWriter struct {
 	// 文件名称
 	fileName string
 	// 上一次写入日期
 	lastYearDay int
 	// 读写锁
 	mutex sync.RWMutex
+	// 日志项队列
+	logItemQ chan []byte
 	// 输出文件
 	outputFile *os.File
 }
 
 // @override
-func (w *DailyFileWriter) Write(p []byte) (n int, err error) {
-	if nil == p {
+func (w *dailyFileWriter) Write(byteArray []byte) (n int, err error) {
+	if nil == byteArray ||
+		len(byteArray) <= 0 {
 		return 0, nil
 	}
 
-	w.mutex.Lock()
-	defer w.mutex.Unlock()
-
-	fileHandler, err := w.getFileHandler()
-
-	if err != nil {
-		return 0, err
+	if nil == w.logItemQ {
+		return 0, errors.Errorf("日志项队列为空")
 	}
 
-	if fileHandler == nil {
-		return 0, errors.Wrap(err, "文件句柄为空")
-	}
+	// 令字节数组入队
+	w.logItemQ <- byteArray
 
-	os.Stdout.Write(p)
-	return fileHandler.Write(p)
+	return len(byteArray), nil
+}
+
+func (w *dailyFileWriter) startWork() {
+	for {
+		// 获取日志项
+		logItem := <-w.logItemQ
+
+		// 获取文件句柄
+		fileHandler, err := w.getFileHandler()
+
+		if err != nil {
+			fmt.Printf("%v", err)
+			continue
+		}
+
+		if fileHandler == nil {
+			fmt.Printf("文件句柄为空")
+			continue
+		}
+
+		_, _ = os.Stdout.Write(logItem)
+		_, _ = fileHandler.Write(logItem)
+	}
 }
 
 // 获取输出文件句柄
-func (w *DailyFileWriter) getFileHandler() (io.Writer, error) {
+func (w *dailyFileWriter) getFileHandler() (io.Writer, error) {
 	yearDay := time.Now().YearDay()
 
 	if w.lastYearDay == yearDay &&
@@ -76,24 +96,10 @@ func (w *DailyFileWriter) getFileHandler() (io.Writer, error) {
 	}
 
 	if nil != w.outputFile {
-		w.outputFile.Close()
+		_ = w.outputFile.Close()
 	}
 
 	w.outputFile = fileHandler
 
 	return fileHandler, nil
-}
-
-func (w *DailyFileWriter) Close() error {
-	w.mutex.Lock()
-	defer w.mutex.Unlock()
-
-	var err error
-
-	if nil != w.outputFile {
-		err = w.outputFile.Close()
-		w.outputFile = nil
-	}
-
-	return err
 }

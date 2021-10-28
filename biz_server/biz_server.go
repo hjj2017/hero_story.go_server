@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"hero_story.go_server/comm/my_log"
 	"log"
+	"time"
 )
 
 func main() {
@@ -11,4 +12,6 @@ func main() {
 
 	fmt.Println("start bizServer")
 	log.Println("Hello")
+
+	time.Sleep(2 * time.Second)
 }
