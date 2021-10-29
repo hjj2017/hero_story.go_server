@@ -45,10 +45,7 @@ func (w *dailyFileWriter) Write(byteArray []byte) (n int, err error) {
 // 开始工作, 通过 go 指令来调用
 // 也就是异步方式写入日志文件...
 func (w *dailyFileWriter) startWork() {
-	for {
-		// 日志出队
-		log := <-w.logQ
-
+	for log := range w.logQ {
 		if nil == log ||
 			len(log) <= 0 {
 			continue

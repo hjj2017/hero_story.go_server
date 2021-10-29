@@ -6,7 +6,7 @@ import (
 )
 
 // 日志队列大小
-const queueSize = 512
+const logQSize = 2048
 
 var writer *dailyFileWriter
 var debugLogger, infoLogger, warningLogger, errorLogger *log.Logger
@@ -18,7 +18,7 @@ func Init(fileName string) {
 	writer = &dailyFileWriter{
 		fileName:    fileName,
 		lastYearDay: -1,
-		logQ:        make(chan []byte, queueSize),
+		logQ:        make(chan []byte, logQSize),
 	}
 
 	debugLogger = log.New(
