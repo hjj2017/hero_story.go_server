@@ -2,8 +2,7 @@ package main
 
 import (
 	"fmt"
-	"hero_story.go_server/comm/my_log"
-	"log"
+	log "hero_story.go_server/comm/my_log"
 	"os"
 	"path"
 	"time"
@@ -16,10 +15,12 @@ func main() {
 		panic(err)
 	}
 
-	my_log.Init(path.Dir(ex) + "/log/biz_server.log", "[ biz_server ] ")
+	log.Init(path.Dir(ex) + "/log/biz_server.log")
 
 	fmt.Println("start bizServer")
-	log.Println("Hello")
+	log.Error("这里有一个错误")
+	log.Info("Hello")
+	log.Warning("我警告你")
 
 	time.Sleep(2 * time.Second)
 }
